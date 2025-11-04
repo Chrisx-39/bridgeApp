@@ -5,6 +5,8 @@ from django.contrib import messages
 from django.db.models import Q, Count, Avg
 from .models import Bridge, TrafficData, MaintenanceRecord
 from .forms import BridgeForm, TrafficDataForm, MaintenanceRecordForm
+from django.db import transaction
+from django.views.generic.edit import 
 
 
 class BridgeListView(ListView):
@@ -107,3 +109,57 @@ def dashboard_view(request):
         'recent_maintenance': recent_maintenance,
     }
     return render(request, 'bridges/dashboard.html', context)
+
+
+# --- Mixin for Maintenance Record Views ---
+class MaintenanceRecordMixin:
+    model = MaintenanceRecord
+    form_class = MaintenanceRecordForm
+    # We define get_success_url in the mixin to ensure we redirect back to the bridge detail
+    
+    def get_success_url(self):
+        # The bridge ID is available on the form instance after validation/creation
+        bridge_pk = self.object.bridge.pk
+        return reverse('bridge_detail', kwargs={'pk': bridge_pk})
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        # Add the parent bridge object to the context for use in the template
+        if 'bridge' in self.kwargs:
+            context['bridge'] = get_object_or_404(Bridge, pk=self.kwargs['bridge'])
+        else:
+            context['bridge'] = self.object.bridge
+        return context
+
+
+# --- Maintenance Record Create View ---
+class MaintenanceRecordCreateView(MaintenanceRecordMixin, CreateView):
+    template_name = 'bridges/maintenance_record_form.html'
+
+    def form_valid(self, form):
+        # Link the new record to the Bridge specified in the URL kwargs
+        bridge = get_object_or_404(Bridge, pk=self.kwargs['bridge'])
+        form.instance.bridge = bridge
+        messages.success(self.request, f'Maintenance action for {bridge.name} scheduled successfully.')
+        return super().form_valid(form)
+
+
+# --- Maintenance Record Update View ---
+class MaintenanceRecordUpdateView(MaintenanceRecordMixin, UpdateView):
+    template_name = 'bridges/maintenance_record_form.html'
+
+    def form_valid(self, form):
+        messages.success(self.request, 'Maintenance record updated successfully.')
+        return super().form_valid(form)
+
+
+# --- Maintenance Record Delete View ---
+class MaintenanceRecordDeleteView(MaintenanceRecordMixin, DeleteView):
+    template_name = 'bridges/maintenance_record_confirm_delete.html'
+
+    def get_success_url(self):
+        # Override to ensure we get the bridge ID *before* the record is deleted
+        bridge_pk = self.get_object().bridge.pk
+        messages.success(self.request, 'Maintenance record deleted successfully.')
+        return reverse('bridge_detail', kwargs={'pk': bridge_pk})
+
