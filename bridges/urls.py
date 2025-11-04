@@ -14,7 +14,6 @@ urlpatterns = [
 
     # ---------------------------
     # 2. Maintenance Record Management
-    # Uses 'bridge_pk' to link new records to the parent bridge.
     # ---------------------------
     path('bridges/<int:bridge_pk>/maintenance/add/',
          views.MaintenanceRecordCreateView.as_view(),

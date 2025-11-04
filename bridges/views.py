@@ -168,76 +168,102 @@ class TrafficDataMixin:
         elif self.object:
             context['bridge'] = self.object.bridge
         return context
-
-class TrafficDataCreateUpdateView(TrafficDataMixin, BaseUpdateView):
+class TrafficDataCreateUpdateView(TrafficDataMixin, UpdateView):
     """
-    Handles both creation and updating of TrafficData because it's a OneToOne field.
-    If it exists, it updates; if not, it creates.
+    Handles both creation and updating of TrafficData. 
+    Inheriting from UpdateView provides the necessary rendering methods.
     """
     template_name = 'bridges/traffic_data_form.html'
+    
+    # NOTE: The UpdateView requires self.object to be set for render_to_response 
+    # to work correctly, which the base UpdateView.get() method does.
     
     def get_object(self, queryset=None):
         bridge_pk = self.kwargs.get('bridge_pk')
         bridge = get_object_or_404(Bridge, pk=bridge_pk)
         
-        # Try to get the existing TrafficData object, if it exists
+        # Try to get the existing TrafficData object
         try:
+            # If object exists, UpdateView logic continues normally
             return TrafficData.objects.get(bridge=bridge)
         except TrafficData.DoesNotExist:
-            # If it doesn't exist, return a new instance tied to the bridge
+            # If it doesn't exist, return a new instance tied to the bridge.
+            # UpdateView treats a new, non-saved instance as an object to be created.
             return TrafficData(bridge=bridge)
 
     def form_valid(self, form):
-        if form.instance.pk:
-            messages.success(self.request, 'Traffic data updated successfully!')
-        else:
+        # We need to save the object manually to check if it was new
+        is_new = form.instance.pk is None
+        self.object = form.save() # Save the object, setting the pk if new
+        
+        if is_new:
             messages.success(self.request, 'Traffic data recorded successfully!')
-        return super().form_valid(form)
-
+        else:
+            messages.success(self.request, 'Traffic data updated successfully!')
+            
+        # Call super().form_valid(form) is usually preferred, but since we overrode 
+        # the save to check for new/update, we manually call the redirect.
+        # Ensure TrafficDataMixin provides get_success_url() or success_url attribute.
+        return super(UpdateView, self).form_valid(form) 
+        # OR simply:
+        # return HttpResponseRedirect(self.get_success_url())
 
 # --- Dashboard and Analytics View (Enhanced) ---
-
 def dashboard_view(request):
     total_bridges = Bridge.objects.count()
     bridges = Bridge.objects.all()
 
     # Calculate condition statistics (existing logic)
-    condition_stats = {
+    raw_condition_stats = {
         'excellent': 0, 'very_good': 0, 'good': 0, 'fair': 0, 'poor': 0
     }
     for bridge in bridges:
+        # Assuming condition_category is a model field like 'Excellent Condition'
         category = bridge.condition_category.lower().replace(' ', '_')
-        if category in condition_stats:
-            condition_stats[category] += 1
+        if category in raw_condition_stats:
+            raw_condition_stats[category] += 1
 
-    # --- NEW: Traffic Analytics ---
-    # Annotate to get total vehicles across all bridges efficiently
+    # --- FIX: Pre-process condition_stats to include percentage ---
+    processed_condition_stats = {}
+    if total_bridges > 0:
+        for category, count in raw_condition_stats.items():
+            percentage = round((count / total_bridges) * 100, 1)
+            # Store the data in a structure the template can easily read
+            processed_condition_stats[category] = {
+                'count': count,
+                'percentage': percentage, # Storing as a number (e.g., 25.5)
+            }
+    else:
+        # Handle the case where there are no bridges
+        for category, count in raw_condition_stats.items():
+             processed_condition_stats[category] = {'count': 0, 'percentage': 0.0}
+
+    # --- Traffic Analytics ---
     traffic_queryset = TrafficData.objects.aggregate(
-        total_heavy=Avg('heavy_vehicles'),
-        total_small=Avg('small_vehicles'),
-        total_bridges_with_traffic=Count('bridge')
+        avg_heavy=Avg('heavy_vehicles'),
+        avg_small=Avg('small_vehicles'),
     )
     
-    avg_daily_heavy = int(traffic_queryset.get('total_heavy') or 0)
-    avg_daily_small = int(traffic_queryset.get('total_small') or 0)
+    # Calculate combined average daily traffic
+    avg_daily_heavy = traffic_queryset.get('avg_heavy') or 0
+    avg_daily_small = traffic_queryset.get('avg_small') or 0
+    avg_daily_traffic = int(avg_daily_heavy + avg_daily_small)
     
-    # --- NEW: Maintenance Analytics ---
+    # --- Maintenance Analytics ---
     total_maintenance_actions = MaintenanceRecord.objects.count()
     completed_maintenance = MaintenanceRecord.objects.filter(is_completed=True).count()
     completion_rate = round((completed_maintenance / total_maintenance_actions) * 100, 1) if total_maintenance_actions > 0 else 0
-
 
     recent_maintenance = MaintenanceRecord.objects.select_related('bridge').order_by('-created_at')[:5]
 
     context = {
         'total_bridges': total_bridges,
-        'condition_stats': condition_stats,
+        'condition_stats': processed_condition_stats,  # Use the pre-processed data
         'recent_maintenance': recent_maintenance,
         
-        # New Analytics Data
-        'avg_daily_traffic': avg_daily_heavy + avg_daily_small,
+        # Analytics Data
+        'avg_daily_traffic': avg_daily_traffic,
         'total_maintenance_actions': total_maintenance_actions,
         'completion_rate': completion_rate,
     }
     return render(request, 'bridges/dashboard.html', context)
-

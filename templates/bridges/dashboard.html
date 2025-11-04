@@ -1,5 +1,5 @@
-{% load humanize %}
 {% extends "base.html" %}
+{% load humanize custom_filters %}
 
 {% block title %}Bridge System Dashboard{% endblock %}
 
@@ -12,10 +12,8 @@
         <p class="text-gray-500 mt-1">Real-time overview of the bridge inventory's health and maintenance status.</p>
     </header>
 
-    <!-- 1. Key Metrics Cards -->
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
 
-        <!-- Total Bridges -->
         <div class="bg-white rounded-xl shadow-lg p-6 border-l-4 border-blue-500 hover:shadow-xl transition duration-300">
             <p class="text-sm font-medium text-gray-500 uppercase tracking-wider">Total Bridges in Inventory</p>
             <div class="flex items-end justify-between mt-2">
@@ -24,7 +22,6 @@
             </div>
         </div>
 
-        <!-- Average Daily Traffic -->
         <div class="bg-white rounded-xl shadow-lg p-6 border-l-4 border-green-500 hover:shadow-xl transition duration-300">
             <p class="text-sm font-medium text-gray-500 uppercase tracking-wider">Avg Daily Traffic (All Bridges)</p>
             <div class="flex items-end justify-between mt-2">
@@ -33,7 +30,6 @@
             </div>
         </div>
 
-        <!-- Maintenance Completion Rate -->
         <div class="bg-white rounded-xl shadow-lg p-6 border-l-4 border-yellow-500 hover:shadow-xl transition duration-300">
             <p class="text-sm font-medium text-gray-500 uppercase tracking-wider">Maint. Completion Rate</p>
             <div class="flex items-end justify-between mt-2">
@@ -42,7 +38,6 @@
             </div>
         </div>
         
-        <!-- Total Maintenance Actions -->
         <div class="bg-white rounded-xl shadow-lg p-6 border-l-4 border-indigo-500 hover:shadow-xl transition duration-300">
             <p class="text-sm font-medium text-gray-500 uppercase tracking-wider">Total Maintenance Actions</p>
             <div class="flex items-end justify-between mt-2">
@@ -52,10 +47,8 @@
         </div>
     </div>
 
-    <!-- 2. Condition Summary and Recent Activity -->
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
-        <!-- Condition Summary Table -->
         <div class="lg:col-span-2 bg-white rounded-xl shadow-lg p-6">
             <h3 class="text-2xl font-semibold text-gray-800 mb-4 border-b pb-2">Condition Summary</h3>
             <div class="overflow-x-auto">
@@ -68,27 +61,25 @@
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-gray-200">
-                        {% for category, count in condition_stats.items %}
-                            {% with percentage=(count / total_bridges * 100)|floatformat:1 %}
-                            <tr>
-                                <td class="px-6 py-4 whitespace-nowrap">
-                                    <div class="font-medium text-gray-900">{{ category | replace:'_',' ' | title }}</div>
-                                </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ count }}</td>
-                                <td class="px-6 py-4 whitespace-nowrap">
-                                    <span class="text-sm font-semibold text-gray-900">{{ percentage }}%</span>
-                                    <div class="w-full bg-gray-200 rounded-full h-2 mt-1">
-                                        <div class="h-2 rounded-full 
-                                            {% if category == 'excellent' %}bg-green-500
-                                            {% elif category == 'very_good' %}bg-lime-500
-                                            {% elif category == 'good' %}bg-yellow-400
-                                            {% elif category == 'fair' %}bg-orange-500
-                                            {% else %}bg-red-600{% endif %}" style="width: {{ percentage }}%">
-                                        </div>
+                        {% for category, data in condition_stats.items %}
+                        <tr>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="font-medium text-gray-900">{{ category | replace:'_, ' | title }}</div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ data.count }}</td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <span class="text-sm font-semibold text-gray-900">{{ data.percentage }}%</span>
+                                <div class="w-full bg-gray-200 rounded-full h-2 mt-1">
+                                    <div class="h-2 rounded-full 
+                                        {% if category == 'excellent' %}bg-green-500
+                                        {% elif category == 'very_good' %}bg-lime-500
+                                        {% elif category == 'good' %}bg-yellow-400
+                                        {% elif category == 'fair' %}bg-orange-500
+                                        {% else %}bg-red-600{% endif %}" style="width: {{ data.percentage }}%">
                                     </div>
-                                </td>
-                            </tr>
-                            {% endwith %}
+                                </div>
+                            </td>
+                        </tr>
                         {% endfor %}
                     </tbody>
                 </table>
@@ -96,7 +87,6 @@
             <p class="text-sm text-gray-400 mt-4">Bridge Condition Index (BCI) analysis and high-risk reporting coming soon.</p>
         </div>
 
-        <!-- Recent Maintenance Records -->
         <div class="lg:col-span-1 bg-white rounded-xl shadow-lg p-6">
             <h3 class="text-2xl font-semibold text-gray-800 mb-4 border-b pb-2">Recent Maintenance Activity</h3>
             
@@ -127,4 +117,3 @@
         </div>
     </div>
 {% endblock %}
-

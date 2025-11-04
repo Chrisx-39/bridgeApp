@@ -1,25 +1,66 @@
 {% extends "base.html" %}
+{% load humanize custom_filters %}
 
 {% block title %}Traffic Data{% endblock %}
 
 {% block content %}
-    <div class="container mt-4">
-        <h2>Manage Traffic Data for: {{ bridge.name }}</h2>
-        <hr>
+<div class="max-w-3xl mx-auto">
+    <div class="mb-6">
+        <a href="{% url 'bridge_detail' bridge.pk %}" class="text-blue-600 hover:text-blue-800 flex items-center">
+            <i class="fas fa-arrow-left mr-2"></i>Back to {{ bridge.name }} Details
+        </a>
+    </div>
+
+    <div class="bg-white rounded-xl shadow-lg p-8">
+        <h1 class="text-3xl font-bold text-gray-900 mb-6">
+            {% if form.instance.pk %}
+                <i class="fas fa-edit text-green-500 mr-2"></i>Edit Traffic Data for: {{ bridge.name }}
+            {% else %}
+                <i class="fas fa-plus-circle text-blue-500 mr-2"></i>Record Traffic Data for: {{ bridge.name }}
+            {% endif %}
+        </h1>
         
-        <form method="post">
+        <form method="post" class="space-y-6">
             {% csrf_token %}
+            
             {% for field in form %}
-                <div class="mb-3">
-                    <label for="{{ field.id_for_label }}" class="form-label">{{ field.label }}</label>
+                {% if field.field.widget.input_type == 'hidden' %}
                     {{ field }}
-                    {% if field.help_text %}<div class="form-text">{{ field.help_text }}</div>{% endif %}
-                    {% if field.errors %}<div class="text-danger small">{{ field.errors }}</div>{% endif %}
-                </div>
+                {% else %}
+                    <div class="field-container">
+                        <label for="{{ field.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">
+                            {{ field.label }}
+                        </label>
+                        
+                        {{ field|add_class:"mt-1 block w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm" }}
+                        
+                        {% if field.help_text %}
+                            <p class="mt-2 text-sm text-gray-500">{{ field.help_text }}</p>
+                        {% endif %}
+                        
+                        {% if field.errors %}
+                            <div class="mt-1 text-sm text-red-600 font-medium">
+                                {% for error in field.errors %}{{ error }}{% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+                {% endif %}
             {% endfor %}
             
-            <button type="submit" class="btn btn-primary mt-3">Save Traffic Data</button>
-            <a href="{% url 'bridge_detail' bridge.pk %}" class="btn btn-secondary mt-3">Cancel</a>
+            <div class="pt-4 flex justify-end space-x-3">
+                <a href="{% url 'bridge_detail' bridge.pk %}" class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-200 rounded-lg hover:bg-gray-300 transition duration-150">
+                    Cancel
+                </a>
+                
+                <button type="submit" class="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition duration-150">
+                    {% if form.instance.pk %}
+                        Update Data
+                    {% else %}
+                        Record Data
+                    {% endif %}
+                </button>
+            </div>
         </form>
     </div>
+</div>
 {% endblock %}
