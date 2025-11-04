@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+
+{% block title %}Delete Maintenance Record{% endblock %}
+
+{% block content %}
+    <div class="container mt-5">
+        <div class="alert alert-warning" role="alert">
+            <h4 class="alert-heading">Confirm Delete Action</h4>
+            <p>Are you sure you want to delete this maintenance record for <strong>{{ bridge.name }}</strong>?</p>
+            <p class="mb-0">Action: <strong>{{ object.get_action_type_display }}</strong> scheduled for {{ object.scheduled_date }}.</p>
+        </div>
+        
+        <form method="post">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-danger">Yes, Delete Record</button>
+            <a href="{% url 'bridge_detail' bridge.pk %}" class="btn btn-secondary">Cancel</a>
+        </form>
+    </div>
+{% endblock %}
