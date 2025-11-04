@@ -1,0 +1,25 @@
+{% extends "bridges/base.html" %}
+
+{% block title %}Maintenance Action{% endblock %}
+
+{% block content %}
+    <div class="container mt-4">
+        <h2>{% if form.instance.pk %}Edit{% else %}Schedule{% endif %} Maintenance for: {{ bridge.name }}</h2>
+        <hr>
+        
+        <form method="post">
+            {% csrf_token %}
+            {% for field in form %}
+                <div class="mb-3">
+                    <label for="{{ field.id_for_label }}" class="form-label">{{ field.label }}</label>
+                    {{ field }}
+                    {% if field.help_text %}<div class="form-text">{{ field.help_text }}</div>{% endif %}
+                    {% if field.errors %}<div class="text-danger small">{{ field.errors }}</div>{% endif %}
+                </div>
+            {% endfor %}
+            
+            <button type="submit" class="btn btn-success mt-3">Save Record</button>
+            <a href="{% url 'bridge_detail' bridge.pk %}" class="btn btn-secondary mt-3">Cancel</a>
+        </form>
+    </div>
+{% endblock %}
