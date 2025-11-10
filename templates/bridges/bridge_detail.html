@@ -65,6 +65,10 @@
                         <dt class="text-gray-600">Year Built:</dt>
                         <dd class="font-medium">{{ bridge.year_built }}</dd>
                     </div>
+                    <div class="flex justify-between">
+                        <dt class="text-gray-600">GPS Coords:</dt>
+                        <dd class="font-medium">{{ bridge.gps_coordinates }}</dd>
+                    </div>
                 </dl>
             </div>
             
@@ -111,6 +115,10 @@
                     <div class="flex justify-between">
                         <dt class="text-gray-600">Piers Rating:</dt>
                         <dd class="font-medium">{{ bridge.piers_rating|default:"N/A" }}/5</dd>
+                    </div>
+                    <div class="flex justify-between">
+                        <dt class="text-gray-600">Abutment Rating:</dt>
+                        <dd class="font-medium">{{ bridge.abutment_rating|default:"N/A" }}/5</dd>
                     </div>
                     <div class="flex justify-between">
                         <dt class="text-gray-600">Average Rating:</dt>

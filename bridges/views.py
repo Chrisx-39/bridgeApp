@@ -2,6 +2,8 @@ from django.shortcuts import render, get_object_or_404, redirect
 from django.views.generic import ListView, DetailView, CreateView, UpdateView, DeleteView
 from django.urls import reverse_lazy, reverse
 from django.contrib import messages
+from django.contrib.auth.mixins import LoginRequiredMixin
+from django.contrib.auth.decorators import login_required
 from django.db.models import Q, Count, Avg
 from django.db import transaction
 from .models import Bridge, TrafficData, MaintenanceRecord
@@ -10,7 +12,7 @@ from django.views.generic.edit import BaseUpdateView # Import needed if not full
 
 # --- Bridge Management Views ---
 
-class BridgeListView(ListView):
+class BridgeListView(LoginRequiredMixin, ListView):
     model = Bridge
     template_name = 'bridges/bridge_list.html'
     context_object_name = 'bridges'
@@ -48,7 +50,7 @@ class BridgeListView(ListView):
         return context
 
 
-class BridgeDetailView(DetailView):
+class BridgeDetailView(LoginRequiredMixin, DetailView):
     model = Bridge
     template_name = 'bridges/bridge_detail.html'
     context_object_name = 'bridge'
@@ -66,7 +68,7 @@ class BridgeDetailView(DetailView):
         return context
 
 
-class BridgeCreateView(CreateView):
+class BridgeCreateView(LoginRequiredMixin, CreateView):
     model = Bridge
     form_class = BridgeForm
     template_name = 'bridges/bridge_form.html'
@@ -77,7 +79,7 @@ class BridgeCreateView(CreateView):
         return super().form_valid(form)
 
 
-class BridgeUpdateView(UpdateView):
+class BridgeUpdateView(LoginRequiredMixin, UpdateView):
     model = Bridge
     form_class = BridgeForm
     template_name = 'bridges/bridge_form.html'
@@ -88,7 +90,7 @@ class BridgeUpdateView(UpdateView):
         return super().form_valid(form)
 
 
-class BridgeDeleteView(DeleteView):
+class BridgeDeleteView(LoginRequiredMixin, DeleteView):
     model = Bridge
     template_name = 'bridges/bridge_confirm_delete.html'
     success_url = reverse_lazy('bridge_list')
@@ -119,7 +121,7 @@ class MaintenanceRecordMixin:
         return context
 
 
-class MaintenanceRecordCreateView(MaintenanceRecordMixin, CreateView):
+class MaintenanceRecordCreateView(LoginRequiredMixin, MaintenanceRecordMixin, CreateView):
     template_name = 'bridges/maintenance_record_form.html'
 
     def form_valid(self, form):
@@ -130,7 +132,7 @@ class MaintenanceRecordCreateView(MaintenanceRecordMixin, CreateView):
         return super().form_valid(form)
 
 
-class MaintenanceRecordUpdateView(MaintenanceRecordMixin, UpdateView):
+class MaintenanceRecordUpdateView(LoginRequiredMixin, MaintenanceRecordMixin, UpdateView):
     template_name = 'bridges/maintenance_record_form.html'
 
     def form_valid(self, form):
@@ -138,7 +140,7 @@ class MaintenanceRecordUpdateView(MaintenanceRecordMixin, UpdateView):
         return super().form_valid(form)
 
 
-class MaintenanceRecordDeleteView(MaintenanceRecordMixin, DeleteView):
+class MaintenanceRecordDeleteView(LoginRequiredMixin, MaintenanceRecordMixin, DeleteView):
     template_name = 'bridges/maintenance_record_confirm_delete.html'
 
     def delete(self, request, *args, **kwargs):
@@ -168,7 +170,7 @@ class TrafficDataMixin:
         elif self.object:
             context['bridge'] = self.object.bridge
         return context
-class TrafficDataCreateUpdateView(TrafficDataMixin, UpdateView):
+class TrafficDataCreateUpdateView(LoginRequiredMixin, TrafficDataMixin, UpdateView):
     """
     Handles both creation and updating of TrafficData. 
     Inheriting from UpdateView provides the necessary rendering methods.
@@ -209,6 +211,7 @@ class TrafficDataCreateUpdateView(TrafficDataMixin, UpdateView):
         # return HttpResponseRedirect(self.get_success_url())
 
 # --- Dashboard and Analytics View (Enhanced) ---
+@login_required
 def dashboard_view(request):
     total_bridges = Bridge.objects.count()
     bridges = Bridge.objects.all()
